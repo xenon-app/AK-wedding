@@ -642,13 +642,14 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "clamp(24px, 4.5vh, 52px) clamp(20px, 4vw, 56px)",
+          padding: "clamp(24px, 4.5vh, 52px) clamp(16px, 5vw, 56px)",
           textAlign: "center",
           boxSizing: "border-box",
           opacity: contentVisible ? 1 : 0,
           transform: contentVisible ? "scale(1)" : "scale(0.96)",
           transition: "opacity 0.35s ease, transform 0.35s ease",
           overflowY: "auto",
+          overflowX: "hidden",
         }}
       >
         {/* ── Animated Blooming Lotus Blossom Motif ─────────────────── */}
@@ -768,12 +769,15 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
         <p
           style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(14px, 2vw, 19px)",
+            fontSize: "clamp(14px, 3.5vw, 19px)",
             fontStyle: "italic",
             letterSpacing: "0.08em",
             color: "#F6E8D6",
             margin: "0 0 clamp(8px, 1.5vh, 16px)",
             textShadow: "0 2px 10px rgba(0,0,0,0.85)",
+            width: "100%",
+            textAlign: "center",
+            overflowWrap: "break-word",
           }}
         >
           Together with their Families
@@ -819,7 +823,7 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
         <h1
           style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(24px, 4.2vw, 42px)",
+            fontSize: "clamp(22px, 5.5vw, 42px)",
             fontWeight: 500,
             fontStyle: "italic",
             color: "#FFF9F2",
@@ -828,6 +832,12 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
             letterSpacing: "0.03em",
             textShadow:
               "0 2px 18px rgba(0,0,0,0.95), 0 0 30px rgba(229,195,101,0.5)",
+            width: "100%",
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
+            textAlign: "center",
+            padding: "0 4px",
+            boxSizing: "border-box",
           }}
         >
           You Are Cordially Invited!
@@ -837,12 +847,15 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
         <p
           style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(13px, 1.8vw, 17px)",
+            fontSize: "clamp(13px, 3vw, 17px)",
             fontStyle: "italic",
             letterSpacing: "0.1em",
             color: "#EAD2BD",
             margin: "0 0 clamp(6px, 1.2vh, 14px)",
             textShadow: "0 2px 10px rgba(0,0,0,0.8)",
+            width: "100%",
+            textAlign: "center",
+            overflowWrap: "break-word",
           }}
         >
           To celebrate the wedding of
@@ -853,13 +866,18 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
           className="gold-shimmer-title"
           style={{
             fontFamily: "'Cinzel', serif",
-            fontSize: "clamp(32px, 6vw, 64px)",
+            fontSize: "clamp(28px, 9vw, 64px)",
             fontWeight: 800,
             letterSpacing: "0.08em",
             margin: "0 0 clamp(8px, 1.6vh, 16px)",
             lineHeight: 1.05,
             textShadow:
               "0 4px 22px rgba(0,0,0,0.95), 0 0 45px rgba(229,195,101,0.6)",
+            width: "100%",
+            overflowWrap: "break-word",
+            wordBreak: "break-word",
+            textAlign: "center",
+            boxSizing: "border-box",
           }}
         >
           Akhilesh &amp; Rakhi
@@ -886,14 +904,16 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
           <p
             style={{
               fontFamily: "'Montserrat', sans-serif",
-              fontSize: "clamp(12px, 1.6vw, 16px)",
-              letterSpacing: "0.24em",
+              fontSize: "clamp(10px, 2.8vw, 16px)",
+              letterSpacing: "0.18em",
               textTransform: "uppercase",
               color: "#F8E7C9",
               fontWeight: 500,
               margin: 0,
               textShadow:
                 "0 2px 12px rgba(0,0,0,0.9), 0 0 18px rgba(229,195,101,0.35)",
+              overflowWrap: "break-word",
+              textAlign: "center",
             }}
           >
             Wednesday, 9th December 2026
@@ -912,13 +932,17 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
         <p
           style={{
             fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(13px, 1.6vw, 16px)",
+            fontSize: "clamp(13px, 3vw, 16px)",
             fontStyle: "italic",
             color: "#F3E3D0",
             lineHeight: 1.65,
             maxWidth: "520px",
+            width: "100%",
             margin: "0 auto clamp(16px, 3vh, 28px) auto",
             textShadow: "0 2px 12px rgba(0,0,0,0.95)",
+            overflowWrap: "break-word",
+            textAlign: "center",
+            boxSizing: "border-box",
           }}
         >
           With the blessings of our families, we invite you to join us in
