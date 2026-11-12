@@ -248,6 +248,34 @@ export default function Home() {
                   gap: 32px !important;
                 }
               }
+
+              /* ── Mobile & Tablet Pointer-Events & Z-Index Fix ────────── */
+              .framer-vp0bm4,
+              [data-framer-name="Section 2"],
+              .framer-9412jb,
+              [data-framer-name="Content"],
+              [data-framer-name="Event Cards"],
+              .framer-1qb2nt1,
+              .events-row-1,
+              .events-row-2,
+              .event-location-btn {
+                pointer-events: auto !important;
+                z-index: 20 !important;
+              }
+
+              /* Decorative floating elements must never capture touch / clicks */
+              .framer-1qi7tcr,
+              .framer-1noxxhl,
+              .framer-1mbm3vh {
+                pointer-events: none !important;
+              }
+
+              /* ── 7.3 Huge blank space after countdown fix ─────────────── */
+              .framer-16l2pdg,
+              .framer-1mus9pp {
+                height: auto !important;
+                min-height: auto !important;
+              }
             `,
           }}
         />
@@ -264,8 +292,8 @@ export default function Home() {
         <LocketPhotos />
       </div>
 
-      {/* ── Music player (bottom-right) — auto-starts when main page reveals ── */}
-      <MusicPlayer autoPlay={mainReady} />
+      {/* ── Music player (bottom-right) — auto-starts on website start ──── */}
+      <MusicPlayer autoPlay={true} />
     </>
   );
 }

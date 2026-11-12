@@ -16,59 +16,13 @@ const FADE_DURATION_MS = 6000; // 6 seconds to ramp from 8 → 45 %
 // Fixed pill button at bottom-right.  Music auto-starts (muted ramp) when
 // the main invitation is revealed; user can toggle play / pause at any time.
 // ---------------------------------------------------------------------------
-export function MusicPlayer({ autoPlay = false }: { autoPlay?: boolean }) {
+export function MusicPlayer({ autoPlay = true }: { autoPlay?: boolean }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false); // show button only after canplay
   const [visible, setVisible] = useState(false); // fade-in entrance
-
-  // ── Create <audio> once ──────────────────────────────────────────────────
-  useEffect(() => {
-    const audio = new Audio(MUSIC_SRC);
-    audio.loop = true;
-    audio.volume = START_VOLUME;
-    audio.preload = "auto";
-    audioRef.current = audio;
-
-    const onCanPlay = () => {
-      setReady(true);
-      // small delay so the button pops in gracefully after page reveal
-      setTimeout(() => setVisible(true), 600);
-    };
-    audio.addEventListener("canplay", onCanPlay, { once: true });
-    audio.addEventListener("canplaythrough", onCanPlay, { once: true });
-
-    if (audio.readyState >= 2) {
-      onCanPlay();
-    }
-
-    return () => {
-      audio.removeEventListener("canplay", onCanPlay);
-      audio.removeEventListener("canplaythrough", onCanPlay);
-      audio.pause();
-      audio.src = "";
-    };
-  }, []);
-
-  // ── Auto-start once parent signals "main page is visible" ───────────────
-  useEffect(() => {
-    if (!autoPlay || !ready) return;
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    audio.volume = START_VOLUME;
-    audio
-      .play()
-      .then(() => {
-        setPlaying(true);
-        startVolumeRamp();
-      })
-      .catch(() => {
-        // Browser blocked autoplay — user must click the button first
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoPlay, ready]);
+  const hasStartedRef = useRef(false);
 
   // ── Smooth volume ramp: START_VOLUME → TARGET_VOLUME over FADE_DURATION ─
   const startVolumeRamp = useCallback(() => {
@@ -76,7 +30,7 @@ export function MusicPlayer({ autoPlay = false }: { autoPlay?: boolean }) {
     const audio = audioRef.current;
     if (!audio) return;
 
-    const steps = 60;
+    const steps = 40;
     const stepMs = FADE_DURATION_MS / steps;
     const stepSize = (TARGET_VOLUME - START_VOLUME) / steps;
     let current = audio.volume;
@@ -91,6 +45,87 @@ export function MusicPlayer({ autoPlay = false }: { autoPlay?: boolean }) {
       }
     }, stepMs);
   }, []);
+
+  const tryPlay = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise
+        .then(() => {
+          hasStartedRef.current = true;
+          setPlaying(true);
+          startVolumeRamp();
+        })
+        .catch(() => {
+          // Autoplay blocked by browser policy without user gesture yet
+        });
+    }
+  }, [startVolumeRamp]);
+
+  // ── Create <audio> once & bind eager start + interaction listeners ───────
+  useEffect(() => {
+    const audio = new Audio(MUSIC_SRC);
+    audio.loop = true;
+    audio.volume = START_VOLUME;
+    audio.preload = "auto";
+    audioRef.current = audio;
+
+    const onCanPlay = () => {
+      setReady(true);
+      setTimeout(() => setVisible(true), 300);
+      if (autoPlay && !hasStartedRef.current) {
+        tryPlay();
+      }
+    };
+    audio.addEventListener("canplay", onCanPlay, { once: true });
+    audio.addEventListener("canplaythrough", onCanPlay, { once: true });
+
+    if (audio.readyState >= 2) {
+      onCanPlay();
+    }
+
+    if (autoPlay) {
+      tryPlay();
+    }
+
+    // User gesture fallback for mobile browsers (instant play on very first touch/click/scroll)
+    const onUserInteraction = () => {
+      if (!hasStartedRef.current && audioRef.current) {
+        tryPlay();
+      }
+      removeListeners();
+    };
+
+    const removeListeners = () => {
+      window.removeEventListener("pointerdown", onUserInteraction);
+      window.removeEventListener("touchstart", onUserInteraction);
+      window.removeEventListener("click", onUserInteraction);
+      window.removeEventListener("keydown", onUserInteraction);
+      window.removeEventListener("scroll", onUserInteraction);
+    };
+
+    window.addEventListener("pointerdown", onUserInteraction, { passive: true });
+    window.addEventListener("touchstart", onUserInteraction, { passive: true });
+    window.addEventListener("click", onUserInteraction, { passive: true });
+    window.addEventListener("keydown", onUserInteraction, { passive: true });
+    window.addEventListener("scroll", onUserInteraction, { passive: true });
+
+    const onCustomStart = () => {
+      tryPlay();
+    };
+    window.addEventListener("start-wedding-music", onCustomStart);
+
+    return () => {
+      removeListeners();
+      window.removeEventListener("start-wedding-music", onCustomStart);
+      audio.removeEventListener("canplay", onCanPlay);
+      audio.removeEventListener("canplaythrough", onCanPlay);
+      audio.pause();
+      audio.src = "";
+    };
+  }, [autoPlay, tryPlay]);
 
   // ── Toggle play / pause ──────────────────────────────────────────────────
   const handleToggle = useCallback(() => {

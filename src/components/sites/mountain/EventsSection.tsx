@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 
 // Google Maps URLs provided by user
 const PUJA_HALDI_MEHNDI_PREETIBHOJ_MAPS_URL =
-  "https://maps.app.goo.gl/jAVZu9pcsoYgLJwV8";
+  "https://maps.app.goo.gl/8sdjxJM8FMX12jAG8";
 const VIVAH_MAPS_URL = "https://maps.app.goo.gl/uHdDSZn6Y8bqASPN9";
 
 interface EventCardProps {
@@ -59,7 +59,7 @@ function PortraitDecorations() {
         }}
       >
         <img
-          src="https://framerusercontent.com/images/64NTAFiZlzU2kGaVG82xflIhbqk.png?width=2892&height=2078"
+        src="/images/templewithcloud.png"
           alt=""
           style={{
             width: "100%",
@@ -243,12 +243,25 @@ function PortraitEventCard({
         </p>
 
         {/* Check Location Button */}
-        <div style={{ marginTop: "12px" }}>
+        <div style={{ marginTop: "12px", position: "relative", zIndex: 10 }}>
           <a
             href={mapUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="event-location-btn"
+            style={{
+              position: "relative",
+              zIndex: 50,
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof window !== "undefined") {
+                window.open(mapUrl, "_blank", "noopener,noreferrer");
+              }
+            }}
           >
             Check Location
           </a>
@@ -409,6 +422,8 @@ function HorizontalEventCard() {
             gap: "18px",
             flexWrap: "wrap",
             marginTop: "14px",
+            position: "relative",
+            zIndex: 10,
           }}
         >
           <a
@@ -416,6 +431,19 @@ function HorizontalEventCard() {
             target="_blank"
             rel="noopener noreferrer"
             className="event-location-btn"
+            style={{
+              position: "relative",
+              zIndex: 50,
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof window !== "undefined") {
+                window.open(PUJA_HALDI_MEHNDI_PREETIBHOJ_MAPS_URL, "_blank", "noopener,noreferrer");
+              }
+            }}
           >
             Preetibhoj Location
           </a>
@@ -424,6 +452,19 @@ function HorizontalEventCard() {
             target="_blank"
             rel="noopener noreferrer"
             className="event-location-btn"
+            style={{
+              position: "relative",
+              zIndex: 50,
+              pointerEvents: "auto",
+              touchAction: "manipulation",
+              cursor: "pointer",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof window !== "undefined") {
+                window.open(VIVAH_MAPS_URL, "_blank", "noopener,noreferrer");
+              }
+            }}
           >
             Vivah Location
           </a>

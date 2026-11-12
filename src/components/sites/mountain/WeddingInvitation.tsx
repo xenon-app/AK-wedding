@@ -429,6 +429,9 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
 
   /* ── Execute Smooth Cinematic Transition ───────────────────────────── */
   const executeTransition = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("start-wedding-music"));
+    }
     if (transitionTriggeredRef.current) return;
     transitionTriggeredRef.current = true;
 
@@ -472,6 +475,9 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
 
   /* ── User Interaction: View Your Invitation Click ─────────────────── */
   const handleClick = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("start-wedding-music"));
+    }
     if (phase !== "idle") return;
     setUserClicked(true);
 

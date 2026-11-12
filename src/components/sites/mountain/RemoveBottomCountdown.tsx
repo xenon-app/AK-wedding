@@ -122,6 +122,32 @@ function GratitudeCard() {
         </a>
       </div>
 
+      <div style={{ marginBottom: "24px" }}>
+        <a
+          href="https://wa.me/917563801193"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            padding: "8px 22px",
+            borderRadius: "9999px",
+            background: "#25D366",
+            color: "#ffffff",
+            fontWeight: 600,
+            fontSize: "15px",
+            fontFamily: "'Cormorant', serif",
+            textDecoration: "none",
+            boxShadow: "0 4px 14px rgba(37, 211, 102, 0.35)",
+            transition: "all 0.2s ease",
+          }}
+        >
+          RSVP on WhatsApp
+        </a>
+      </div>
+
       <div
         style={{
           fontFamily: "'Cormorant', serif",

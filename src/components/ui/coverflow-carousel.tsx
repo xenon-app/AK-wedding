@@ -321,18 +321,46 @@ export function CoverflowCarousel({
             <button
               type="button"
               aria-label="Previous slide"
-              onClick={() => nudge(-1)}
-              className="absolute left-3 top-1/2 z-[200] -translate-y-1/2 rounded-full bg-background/70 p-2 text-foreground backdrop-blur transition hover:bg-background"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                nudge(-1);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                nudge(-1);
+              }}
+              style={{
+                width: "44px",
+                height: "44px",
+                minWidth: "44px",
+                minHeight: "44px",
+                touchAction: "manipulation",
+              }}
+              className="absolute left-3 top-1/2 z-[200] -translate-y-1/2 flex items-center justify-center rounded-full bg-background/80 p-0 text-[#24121E] shadow-md backdrop-blur transition hover:bg-background active:scale-95"
             >
-              <ChevronLeft className="size-5" />
+              <ChevronLeft className="size-6 text-[#24121E]" />
             </button>
             <button
               type="button"
               aria-label="Next slide"
-              onClick={() => nudge(1)}
-              className="absolute right-3 top-1/2 z-[200] -translate-y-1/2 rounded-full bg-background/70 p-2 text-foreground backdrop-blur transition hover:bg-background"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                nudge(1);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                nudge(1);
+              }}
+              style={{
+                width: "44px",
+                height: "44px",
+                minWidth: "44px",
+                minHeight: "44px",
+                touchAction: "manipulation",
+              }}
+              className="absolute right-3 top-1/2 z-[200] -translate-y-1/2 flex items-center justify-center rounded-full bg-background/80 p-0 text-[#24121E] shadow-md backdrop-blur transition hover:bg-background active:scale-95"
             >
-              <ChevronRight className="size-5" />
+              <ChevronRight className="size-6 text-[#24121E]" />
             </button>
           </>
         )}
@@ -343,11 +371,17 @@ export function CoverflowCarousel({
           key={selected}
           className="mt-2 flex flex-col items-center px-6 duration-300 animate-in fade-in"
         >
-          <p className="text-[15px] font-semibold tracking-tight text-foreground">
+          <p
+            className="text-[16px] font-semibold tracking-tight"
+            style={{ color: "#24121E" }}
+          >
             {active.title}
           </p>
           {active.subtitle && (
-            <p className="mt-1 text-[13px] text-muted-foreground">
+            <p
+              className="mt-1 text-[14px]"
+              style={{ color: "#4A273C" }}
+            >
               {active.subtitle}
             </p>
           )}

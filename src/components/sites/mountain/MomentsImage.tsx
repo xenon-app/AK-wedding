@@ -53,10 +53,10 @@ function MomentsSection() {
           style={{
             fontFamily: "'Cormorant Infant', serif",
             fontSize: "clamp(28px, 4.5vw, 48px)",
-            color: "#f6e1bb",
+            color: "#24121E",
             letterSpacing: "2px",
             margin: 0,
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           Moments We Cherish
@@ -65,9 +65,10 @@ function MomentsSection() {
           style={{
             fontFamily: "'Cormorant', serif",
             fontSize: "clamp(15px, 2vw, 20px)",
-            color: "rgba(246, 225, 187, 0.8)",
+            color: "#4A273C",
             fontStyle: "italic",
             marginTop: "6px",
+            fontWeight: 500,
           }}
         >
           Drag or use arrows to explore our journey
