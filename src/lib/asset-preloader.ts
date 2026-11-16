@@ -45,12 +45,14 @@ export function preloadAndDecodeImage(
       if (!resolved) {
         resolved = true;
         clearTimeout(timer);
+        if (success) inMemoryDecodedImages.set(url, img);
+        inFlightPromises.delete(url);
         resolve(success);
       }
     };
 
     const timer = setTimeout(() => {
-      // Timeout fallback: don't block the app if an asset is slow
+      // Allow the caller to retry rather than treating a timeout as success.
       finish(false);
     }, timeoutMs);
 
@@ -59,12 +61,12 @@ export function preloadAndDecodeImage(
     img.loading = "eager";
 
     img.onload = () => {
-      inMemoryDecodedImages.set(url, img);
+      if (resolved) return;
       if ("decode" in img && typeof img.decode === "function") {
         img
           .decode()
           .then(() => finish(true))
-          .catch(() => finish(true)); // Image is loaded even if decode fails
+          .catch(() => finish(false));
       } else {
         finish(true);
       }
@@ -83,7 +85,7 @@ export function preloadAndDecodeImage(
 }
 
 /**
- * Ensures all web fonts (Cinzel, Cormorant Garamond, Montserrat, etc.)
+ * Ensures all web fonts (Cinzel, Cormorant Garamond, Montserrat, Gotu, etc.)
  * are fully loaded and rasterized in document.fonts.
  */
 export function preloadFonts(timeoutMs: number = 4000): Promise<boolean> {
@@ -92,16 +94,30 @@ export function preloadFonts(timeoutMs: number = 4000): Promise<boolean> {
   }
 
   return new Promise((resolve) => {
-    const timer = setTimeout(() => resolve(true), timeoutMs);
-    document.fonts.ready
-      .then(() => {
-        clearTimeout(timer);
-        resolve(true);
-      })
-      .catch(() => {
-        clearTimeout(timer);
-        resolve(true);
-      });
+    let resolved = false;
+    const finish = (success: boolean) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timer);
+      resolve(success);
+    };
+    const timer = setTimeout(() => finish(false), timeoutMs);
+    const requiredFonts = [
+      '700 16px "Cinzel"',
+      '400 16px "Cormorant"',
+      '400 16px "Cormorant Infant"',
+      '400 16px "Cormorant Upright"',
+      "400 16px Gotu",
+      '400 16px "Cormorant Garamond"',
+      "400 16px Montserrat",
+    ];
+
+    Promise.all([
+      document.fonts.ready,
+      ...requiredFonts.map((font) => document.fonts.load(font)),
+    ])
+      .then(() => finish(true))
+      .catch(() => finish(false));
   });
 }
 
@@ -109,8 +125,8 @@ export function preloadFonts(timeoutMs: number = 4000): Promise<boolean> {
  * Orchestrates complete asset preparation with Promise.allSettled:
  * 1. Preloads all critical first-viewport images & couple characters.
  * 2. Checks font readiness.
- * 3. Preloads secondary images in parallel.
- * 4. Yields real-time progress callbacks.
+ * 3. Starts secondary image preloading after critical assets finish.
+ * 4. Yields real-time progress callbacks for critical assets and fonts.
  */
 export function startAssetPreloader(
   onProgress?: (status: PreloadStatus) => void,
@@ -121,61 +137,57 @@ export function startAssetPreloader(
 
   return new Promise((resolveReady) => {
     const totalCritical = CRITICAL_ASSETS.length;
+    const total = totalCritical + 1;
     let loadedCount = 0;
     let failedCount = 0;
-    let criticalResolved = false;
+    let completedCount = 0;
 
-    const report = () => {
-      const progress = Math.min(
-        100,
-        Math.round((loadedCount / Math.max(1, totalCritical)) * 100),
-      );
+    const report = (isAllReady = false) => {
+      const progress = Math.round((completedCount / total) * 100);
       if (onProgress) {
         onProgress({
-          total: totalCritical,
+          total,
           loaded: loadedCount,
           failed: failedCount,
           progress,
-          isCriticalReady: criticalResolved,
-          isAllReady: false,
+          isCriticalReady: isAllReady && failedCount === 0,
+          isAllReady: isAllReady && failedCount === 0,
         });
       }
     };
 
-    // Safety timeout: Maximum 6.5 seconds waiting time under any circumstance
-    const safetyTimer = setTimeout(() => {
-      if (!criticalResolved) {
-        criticalResolved = true;
-        resolveReady({ isReady: true });
-      }
-    }, 6500);
+    const recordResult = (success: boolean) => {
+      if (success) loadedCount++;
+      else failedCount++;
+      completedCount++;
+      report();
+    };
 
-    // Font readiness promise
-    const fontPromise = preloadFonts(3500);
-
-    // Critical images promises
-    const criticalPromises = CRITICAL_ASSETS.map((url) =>
-      preloadAndDecodeImage(url).then((success) => {
-        if (success) loadedCount++;
-        else failedCount++;
-        report();
-      }),
+    const fontPromise = preloadFonts().then(
+      recordResult,
+      () => recordResult(false),
     );
 
-    // When all critical assets and fonts are settled:
+    const criticalPromises = CRITICAL_ASSETS.map((url) =>
+      preloadAndDecodeImage(url).then(
+        recordResult,
+        () => recordResult(false),
+      ),
+    );
+
+    report();
+
     Promise.allSettled([fontPromise, ...criticalPromises]).then(() => {
-      clearTimeout(safetyTimer);
-      if (!criticalResolved) {
-        criticalResolved = true;
-        report();
-        resolveReady({ isReady: true });
+      const isReady = failedCount === 0;
+      report(true);
+      resolveReady({ isReady });
+
+      if (isReady) {
+        void Promise.allSettled(
+          SECONDARY_ASSETS.map((url) => preloadAndDecodeImage(url)),
+        );
       }
     });
-
-    // Secondary assets continue warming in parallel without blocking the initial view
-    Promise.allSettled(
-      SECONDARY_ASSETS.map((url) => preloadAndDecodeImage(url)),
-    ).catch(() => {});
   });
 }
 

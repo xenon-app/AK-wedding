@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useSyncExternalStore } from "react";
 
 import { mountainStyles, mountainBody } from "@/lib/mountain-html";
 import { RevealOnScroll } from "@/components/sites/mountain/RevealOnScroll";
@@ -13,10 +13,24 @@ import { LocketPhotos } from "@/components/sites/mountain/LocketPhotos";
 import { WeddingInvitation } from "@/components/sites/mountain/WeddingInvitation";
 import { MusicPlayer } from "@/components/sites/mountain/MusicPlayer";
 import { EventsSection } from "@/components/sites/mountain/EventsSection";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import {
+  getLanguageSnapshot,
+  getServerLanguageSnapshot,
+  observeLocalizedContent,
+  setLanguagePreference,
+  subscribeToLanguage,
+  type Language,
+} from "@/lib/localization";
 
 export default function Home() {
   const [showInvitation, setShowInvitation] = useState(true);
   const [mainReady, setMainReady] = useState(false);
+  const language = useSyncExternalStore(
+    subscribeToLanguage,
+    getLanguageSnapshot,
+    getServerLanguageSnapshot,
+  );
 
   // Called when the ink transition covers the screen.
   const handleEnter = useCallback(() => {
@@ -28,8 +42,191 @@ export default function Home() {
     setShowInvitation(false);
   }, []);
 
+  useEffect(() => {
+    const scrollPosition = window.scrollY;
+    const title =
+      language === "hi"
+        ? "Akhilesh & Rakhi | विवाह निमंत्रण"
+        : "Akhilesh & Rakhi | Wedding Invitation";
+    const synchronizeMetadata = () => {
+      document.documentElement.lang = language;
+      if (document.title !== title) document.title = title;
+
+      const description =
+        language === "hi"
+          ? "Akhilesh & Rakhi के विवाहोत्सव में सादर आमंत्रित हैं। 9 दिसंबर 2026 को हमारे साथ इस मंगलमय अवसर का उत्सव मनाएँ।"
+          : "With the blessings of our families, we warmly invite you to celebrate the wedding of Akhilesh Kumar & Kumari Rakhi on 9th December 2026. Join us for our special celebrations, cherished moments, and a beautiful beginning together.";
+      document
+        .querySelectorAll<HTMLMetaElement>(
+          'meta[name="description"], meta[property="og:description"], meta[name="twitter:description"]',
+        )
+        .forEach((meta) => {
+          if (meta.content !== description) meta.content = description;
+        });
+
+      document
+        .querySelectorAll<HTMLMetaElement>(
+          'meta[property="og:title"], meta[name="twitter:title"]',
+        )
+        .forEach((meta) => {
+          if (meta.content !== title) meta.content = title;
+        });
+    };
+
+    const metadataObserver = new MutationObserver(synchronizeMetadata);
+    metadataObserver.observe(document.head, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
+    synchronizeMetadata();
+
+    const stopObserving = observeLocalizedContent(language);
+    if (window.scrollY !== scrollPosition) {
+      window.scrollTo({ top: scrollPosition, behavior: "instant" });
+    }
+    return () => {
+      metadataObserver.disconnect();
+      stopObserving();
+    };
+  }, [language]);
+
+  const handleLanguageChange = useCallback((nextLanguage: Language) => {
+    setLanguagePreference(nextLanguage);
+  }, []);
+
+  useEffect(() => {
+    if (!mainReady || showInvitation) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const scrollSpeed =200;
+    let animationFrameId: number | null = null;
+    let startDelayId: number | null = null;
+    let resumeTimeoutId: number | null = null;
+    let lastFrameTime: number | null = null;
+    let touchActive = false;
+    let mouseActive = false;
+
+    const clearResumeTimeout = () => {
+      if (resumeTimeoutId !== null) {
+        window.clearTimeout(resumeTimeoutId);
+        resumeTimeoutId = null;
+      }
+    };
+
+    const stopAutoScroll = () => {
+      if (animationFrameId !== null) {
+        window.cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      if (startDelayId !== null) {
+        window.clearTimeout(startDelayId);
+        startDelayId = null;
+      }
+      lastFrameTime = null;
+    };
+
+    const autoScroll = (time: number) => {
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
+      if (window.scrollY >= maxScroll) {
+        animationFrameId = null;
+        lastFrameTime = null;
+        return;
+      }
+
+      if (lastFrameTime !== null) {
+        const elapsed = Math.min(time - lastFrameTime, 50);
+        const nextPosition = Math.min(
+          window.scrollY + (elapsed * scrollSpeed) / 1000,
+          maxScroll,
+        );
+        window.scrollTo({ top: nextPosition, behavior: "instant" });
+      }
+
+      lastFrameTime = time;
+      animationFrameId = window.requestAnimationFrame(autoScroll);
+    };
+
+    const startAutoScroll = () => {
+      clearResumeTimeout();
+      if (touchActive || mouseActive || animationFrameId !== null) return;
+      const maxScroll =
+        document.documentElement.scrollHeight - window.innerHeight;
+      if (window.scrollY >= maxScroll) return;
+      lastFrameTime = null;
+      animationFrameId = window.requestAnimationFrame(autoScroll);
+    };
+
+    const scheduleResume = () => {
+      clearResumeTimeout();
+      if (!touchActive && !mouseActive) {
+        resumeTimeoutId = window.setTimeout(startAutoScroll, 5000);
+      }
+    };
+
+    const handleWheel = () => {
+      stopAutoScroll();
+      scheduleResume();
+    };
+
+    const handleTouchStart = () => {
+      touchActive = true;
+      stopAutoScroll();
+      clearResumeTimeout();
+    };
+
+    const handleTouchEnd = (event: TouchEvent) => {
+      if (event.touches.length === 0) {
+        touchActive = false;
+        scheduleResume();
+      }
+    };
+
+    const handleMouseDown = () => {
+      mouseActive = true;
+      stopAutoScroll();
+      clearResumeTimeout();
+    };
+
+    const handleMouseUp = () => {
+      mouseActive = false;
+      scheduleResume();
+    };
+
+    startDelayId = window.setTimeout(() => {
+      startDelayId = null;
+      startAutoScroll();
+    }, 1000);
+
+    window.addEventListener("wheel", handleWheel, { passive: true });
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", stopAutoScroll, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+    window.addEventListener("mousedown", handleMouseDown, { passive: true });
+    window.addEventListener("mouseup", handleMouseUp, { passive: true });
+
+    return () => {
+      stopAutoScroll();
+      clearResumeTimeout();
+      window.removeEventListener("wheel", handleWheel);
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", stopAutoScroll);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [mainReady, showInvitation]);
+
   return (
     <>
+      <LanguageSelector
+        language={language}
+        onChange={handleLanguageChange}
+      />
+
       {/* Wedding Invitation Entry Experience */}
       {showInvitation && (
         <WeddingInvitation
@@ -40,6 +237,8 @@ export default function Home() {
 
       {/* Main Wedding Website */}
       <div
+        aria-hidden={!mainReady}
+        inert={!mainReady}
         style={{
           opacity: mainReady ? 1 : 0,
           transform: mainReady ? "translateY(0)" : "translateY(16px)",
@@ -390,8 +589,36 @@ export default function Home() {
                 word-break: break-word !important;
                 white-space: normal !important;
               }
+
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 p,
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 h1,
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 h2,
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 h3,
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 span,
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 [data-framer-component-type="Text"] {
+                font-size: max(14px, min(9vw, var(--framer-font-size, 16px))) !important;
+                line-height: 1.2 !important;
+                overflow-wrap: anywhere !important;
+                word-break: normal !important;
+                white-space: normal !important;
+                text-align: center !important;
+              }
+
+              html[lang="hi"] .mountain-clone .framer-1qycoz3 [data-framer-component-type="RichTextContainer"] {
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+              }
+
+              html[lang="hi"] .mountain-clone .framer-sNC4T [data-framer-name="Aaditya"],
+              html[lang="hi"] .mountain-clone .framer-sNC4T [data-framer-name="Veera"] {
+                width: 100% !important;
+                height: auto !important;
+                min-height: 0 !important;
+              }
+
               .framer-1qj8qk9 [style*="font-size:1"] {
-                font-size: clamp(10px, 2vw, 50px) !important;
+                font-size: clamp(10px, 2vw, 40px) !important;
                 overflow-wrap: break-word !important;
                 word-break: break-word !important;
                 white-space: normal !important;
@@ -401,6 +628,19 @@ export default function Home() {
                 .framer-1qycoz3 {
                   padding-left: 1px !important;
                   padding-right: 1px !important;
+                }
+
+                html[lang="hi"] .mountain-clone [data-framer-component-type="RichTextContainer"] {
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
+                }
+
+                html[lang="hi"] .mountain-clone .framer-sNC4T [data-framer-name="Aaditya"] p,
+                html[lang="hi"] .mountain-clone .framer-sNC4T [data-framer-name="&"] p,
+                html[lang="hi"] .mountain-clone .framer-sNC4T [data-framer-name="Veera"] p {
+                  font-size: clamp(36px, 12vw, 48px) !important;
+                  line-height: 1.15 !important;
+                  text-align: center !important;
                 }
               }
             `,

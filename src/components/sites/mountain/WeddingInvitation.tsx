@@ -93,7 +93,7 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
 
   // Preloader readiness & progress state
   const [preloadStatus, setPreloadStatus] = useState<PreloadStatus>({
-    total: 45,
+    total: 0,
     loaded: 0,
     failed: 0,
     progress: 0,
@@ -101,7 +101,9 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
     isAllReady: false,
   });
   const [isReady, setIsReady] = useState(false);
+  const [hasLoadError, setHasLoadError] = useState(false);
   const [userClicked, setUserClicked] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const prefersReducedRef = useRef(false);
   const onEnterRef = useRef(onEnter);
@@ -455,23 +457,22 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
   useEffect(() => {
     let unmounted = false;
 
-    // Start downloading and decoding all website assets
     startAssetPreloader((status) => {
       if (!unmounted) {
         setPreloadStatus(status);
       }
-    }).then(() => {
+    }).then(({ isReady: assetsReady }) => {
       if (!unmounted) {
-        setIsReady(true);
-        // Once all essential assets are ready, smoothly transition to the main page
-        executeTransition();
+        setIsReady(assetsReady);
+        setHasLoadError(!assetsReady);
+        if (assetsReady) executeTransition();
       }
     });
 
     return () => {
       unmounted = true;
     };
-  }, [executeTransition]);
+  }, [executeTransition, retryCount]);
 
   /* ── User Interaction: View Your Invitation Click ─────────────────── */
   const handleClick = useCallback(() => {
@@ -479,6 +480,21 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
       window.dispatchEvent(new CustomEvent("start-wedding-music"));
     }
     if (phase !== "idle") return;
+    if (hasLoadError) {
+      setUserClicked(true);
+      setIsReady(false);
+      setHasLoadError(false);
+      setPreloadStatus((status) => ({
+        ...status,
+        loaded: 0,
+        failed: 0,
+        progress: 0,
+        isCriticalReady: false,
+        isAllReady: false,
+      }));
+      setRetryCount((count) => count + 1);
+      return;
+    }
     setUserClicked(true);
 
     // If assets are already fully ready, execute transition immediately
@@ -487,7 +503,7 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
     }
     // If assets are still downloading/decoding, the preloader promise will
     // automatically trigger executeTransition the millisecond readiness completes!
-  }, [phase, isReady, executeTransition]);
+  }, [phase, isReady, hasLoadError, executeTransition]);
 
   // When dissolving begins, wait for the fade-out to complete, then unmount
   useEffect(() => {
@@ -955,6 +971,7 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
           disabled={phase !== "idle"}
           userClicked={userClicked}
           isReady={isReady}
+          hasLoadError={hasLoadError}
           progress={preloadStatus.progress}
         />
 
@@ -975,6 +992,16 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
         >
           {/* Subtle golden glowing progress line */}
           <div
+            role="progressbar"
+            aria-label="Experience preparation"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={preloadStatus.progress}
+            aria-valuetext={
+              hasLoadError
+                ? "Some resources could not be loaded. Tap to retry."
+                : `${preloadStatus.progress}%`
+            }
             style={{
               width: "100%",
               height: "2.5px",
@@ -997,6 +1024,7 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
             />
           </div>
           <span
+            role="status"
             style={{
               fontFamily: "'Montserrat', sans-serif",
               fontSize: "10.5px",
@@ -1010,7 +1038,9 @@ export function WeddingInvitation({ onEnter, onComplete }: WeddingInvitationProp
           >
             {isReady
               ? "Assets Prepared • Welcome"
-              : `Preparing Experience • ${preloadStatus.progress}%`}
+              : hasLoadError
+                ? "Some resources could not be loaded. Tap to retry."
+                : `Preparing Experience • ${preloadStatus.progress}%`}
           </span>
         </div>
       </div>
@@ -1038,6 +1068,7 @@ interface InvitationButtonProps {
   disabled: boolean;
   userClicked: boolean;
   isReady: boolean;
+  hasLoadError: boolean;
   progress: number;
 }
 
@@ -1046,6 +1077,7 @@ function InvitationButton({
   disabled,
   userClicked,
   isReady,
+  hasLoadError,
   progress,
 }: InvitationButtonProps) {
   const [hovered, setHovered] = useState(false);
@@ -1064,7 +1096,7 @@ function InvitationButton({
       onMouseUp={() => setPressed(false)}
       onTouchStart={() => setPressed(true)}
       onTouchEnd={() => setPressed(false)}
-      aria-label="View Your Invitation"
+      aria-label={hasLoadError ? "Retry Loading" : "View Your Invitation"}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -1100,9 +1132,11 @@ function InvitationButton({
       }}
     >
       <span>
-        {userClicked && !isReady
-          ? `Preparing Invitation... ${progress}%`
-          : "View Your Invitation"}
+        {hasLoadError
+          ? "Retry Loading"
+          : userClicked && !isReady
+            ? `Preparing Invitation... ${progress}%`
+            : "View Your Invitation"}
       </span>
       {/* Royal decorative arrow */}
       <svg
